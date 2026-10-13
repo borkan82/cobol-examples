@@ -33,6 +33,7 @@
        01 WS-REPORT-STATUS PIC XX.
        01 WS-REPORT-TOTAL PIC ZZZ,ZZZ,ZZ9.99.
        01 WS-REPORT-COUNT PIC ZZZ9.
+       01 WS-EDITED-SALARY PIC ZZZ,ZZ9.99.
 
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
@@ -53,6 +54,14 @@
                CLOSE EMPLOYEE-FILE
                STOP RUN
            END-IF
+
+           MOVE "EMPLOYEE ID  EMPLOYEE NAME"
+               TO REPORT-RECORD
+           WRITE REPORT-RECORD
+
+           MOVE "----------------------------------------"
+               TO REPORT-RECORD
+           WRITE REPORT-RECORD
 
            PERFORM UNTIL WS-EOF = "Y"
                READ EMPLOYEE-FILE
@@ -105,6 +114,28 @@
 
                ADD WS-SALARY TO WS-TOTAL-SALARY
                ADD 1 TO WS-EMPLOYEE-COUNT
+
+               MOVE SPACES TO REPORT-RECORD
+               STRING
+                   FUNCTION TRIM(EMPLOYEE-ID)
+                   " "
+                   FUNCTION TRIM(EMPLOYEE-NAME)
+                   " "
+                   INTO REPORT-RECORD
+               END-STRING
+
+               MOVE WS-SALARY TO WS-EDITED-SALARY
+
+               MOVE SPACES TO REPORT-RECORD
+               STRING
+                   FUNCTION TRIM(EMPLOYEE-ID)
+                   " "
+                   FUNCTION TRIM(EMPLOYEE-NAME)
+                   " "
+                   WS-EDITED-SALARY
+                   INTO REPORT-RECORD
+               END-STRING
+               WRITE REPORT-RECORD
 
                DISPLAY EMPLOYEE-ID " "
                    EMPLOYEE-NAME " "
