@@ -170,13 +170,32 @@
                RETURNING WS-RESULT
            END-CALL
 
+           DISPLAY "DEBUG: pg_update_salary result = "
+                   WS-RESULT
+
            EVALUATE WS-RESULT
                WHEN 0
-                   DISPLAY "Salary updated successfully!"
+                   DISPLAY "Salary updated successfully."
                WHEN 2
-                   DISPLAY "Employee not found."
+                   DISPLAY "Error: Employee not found."
                WHEN OTHER
-                   DISPLAY "Salary update failed."
+                   MOVE SPACES TO WS-DB-ERROR
+
+                   CALL STATIC "pg_get_last_error"
+                       USING
+                           BY REFERENCE WS-DB-ERROR
+                           BY VALUE 512
+                       RETURNING WS-RESULT
+                   END-CALL
+
+                   IF WS-DB-ERROR = SPACES
+                       DISPLAY "Salary update failed."
+                       DISPLAY
+                           "No diagnostic was provided by ODBC."
+                   ELSE
+                       DISPLAY "Salary update failed:"
+                       DISPLAY FUNCTION TRIM(WS-DB-ERROR)
+                   END-IF
            END-EVALUATE.
 
        DELETE-EMPLOYEE.

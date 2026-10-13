@@ -335,6 +335,8 @@ cleanup:
 
 int pg_update_salary(const char *employee_id, const char *salary)
 {
+    pg_last_error[0] = '\0';
+
     SQLHENV env = SQL_NULL_HENV;
     SQLHDBC dbc = SQL_NULL_HDBC;
     SQLHSTMT stmt = SQL_NULL_HSTMT;
@@ -345,7 +347,7 @@ int pg_update_salary(const char *employee_id, const char *salary)
     SQLLEN pay_len = SQL_NTS;
     int connected = 0;
     int result = 1;
-
+    
     memcpy(id, employee_id, 5);
     memcpy(pay, salary, 12);
     id[5] = '\0';
@@ -363,49 +365,70 @@ int pg_update_salary(const char *employee_id, const char *salary)
 
     rc = SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION,
                        (SQLPOINTER)SQL_OV_ODBC3, 0);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_ENV, env);
         goto cleanup;
+    }
 
     rc = SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_ENV, env);
         goto cleanup;
+    }
 
     rc = SQLConnect(dbc,
         (SQLCHAR *)"COBOL_PG", SQL_NTS,
         (SQLCHAR *)"cobol_user", SQL_NTS,
         (SQLCHAR *)"cobol_dev_password", SQL_NTS);
 
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_DBC, dbc);
         goto cleanup;
+    }
 
     connected = 1;
 
     rc = SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_DBC, dbc);
         goto cleanup;
+    }
 
     rc = SQLPrepare(stmt,
         (SQLCHAR *)"UPDATE employees SET salary = "
                    "CAST(? AS NUMERIC) WHERE employee_id = ?",
         SQL_NTS);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_VARCHAR, 12, 0,
         pay, sizeof(pay), &pay_len);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(stmt, 2, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_CHAR, 5, 0,
         id, sizeof(id), &id_len);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLExecute(stmt);
-    if (!SQL_SUCCEEDED(rc))
+    if (rc == SQL_NO_DATA) {
+        result = 2;
         goto cleanup;
+    }
+
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
+        goto cleanup;
+    }
 
     SQLLEN affected = 0;
     rc = SQLRowCount(stmt, &affected);
@@ -432,6 +455,8 @@ cleanup:
 
 int pg_delete_employee(const char *employee_id)
 {
+    pg_last_error[0] = '\0';
+
     SQLHENV env = SQL_NULL_HENV;
     SQLHDBC dbc = SQL_NULL_HDBC;
     SQLHSTMT stmt = SQL_NULL_HSTMT;
@@ -488,8 +513,15 @@ int pg_delete_employee(const char *employee_id)
         goto cleanup;
 
     rc = SQLExecute(stmt);
-    if (!SQL_SUCCEEDED(rc))
+    if (rc == SQL_NO_DATA) {
+        result = 2;
         goto cleanup;
+    }
+
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
+        goto cleanup;
+    }
 
     rc = SQLRowCount(stmt, &affected);
     if (SQL_SUCCEEDED(rc) && affected > 0)
