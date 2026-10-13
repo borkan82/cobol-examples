@@ -34,6 +34,8 @@
        01 WS-REPORT-TOTAL PIC ZZZ,ZZZ,ZZ9.99.
        01 WS-REPORT-COUNT PIC ZZZ9.
        01 WS-EDITED-SALARY PIC ZZZ,ZZ9.99.
+       01 WS-VALID-COUNT   PIC 9(4) VALUE ZERO.
+       01 WS-INVALID-COUNT PIC 9(4) VALUE ZERO.
 
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
@@ -70,6 +72,13 @@
                    NOT AT END
                        PERFORM PROCESS-EMPLOYEE
                END-READ
+               
+               IF WS-FILE-STATUS NOT = "00"
+                  AND WS-FILE-STATUS NOT = "10"
+                   DISPLAY "ERROR READING INPUT FILE: "
+                       WS-FILE-STATUS
+                   MOVE "Y" TO WS-EOF
+               END-IF
            END-PERFORM
 
            CLOSE EMPLOYEE-FILE
@@ -91,6 +100,22 @@
 
            MOVE WS-TOTAL-SALARY TO WS-REPORT-TOTAL
            MOVE WS-REPORT-TOTAL TO REPORT-RECORD
+           WRITE REPORT-RECORD
+
+           MOVE SPACES TO REPORT-RECORD
+           STRING
+               "VALID RECORDS: "
+               WS-VALID-COUNT
+               INTO REPORT-RECORD
+           END-STRING
+           WRITE REPORT-RECORD
+
+           MOVE SPACES TO REPORT-RECORD
+           STRING
+               "INVALID RECORDS: "
+               WS-INVALID-COUNT
+               INTO REPORT-RECORD
+           END-STRING
            WRITE REPORT-RECORD
 
            CLOSE REPORT-FILE
@@ -137,11 +162,25 @@
                END-STRING
                WRITE REPORT-RECORD
 
+               ADD 1 TO WS-VALID-COUNT
+
                DISPLAY EMPLOYEE-ID " "
                    EMPLOYEE-NAME " "
                    WS-SALARY
 
            ELSE
+               ADD 1 TO WS-INVALID-COUNT
+
                DISPLAY "INVALID SALARY FOR EMPLOYEE: "
                    EMPLOYEE-ID
+
+               MOVE SPACES TO REPORT-RECORD
+               STRING
+                   "INVALID SALARY: "
+                   FUNCTION TRIM(EMPLOYEE-ID)
+                   " "
+                   FUNCTION TRIM(EMPLOYEE-NAME)
+                   INTO REPORT-RECORD
+               END-STRING
+               WRITE REPORT-RECORD
            END-IF.
