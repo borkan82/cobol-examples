@@ -1,4 +1,3 @@
-
        IDENTIFICATION DIVISION.
        PROGRAM-ID. BATCH-PAYROLL.
 
@@ -9,13 +8,13 @@
                ASSIGN TO "employees.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-FILE-STATUS.
+           SELECT REPORT-FILE
+               ASSIGN TO "payroll-report.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-REPORT-STATUS.    
 
        DATA DIVISION.
        FILE SECTION.
-       SELECT REPORT-FILE
-               ASSIGN TO "payroll-report.txt"
-               ORGANIZATION IS LINE SEQUENTIAL
-               FILE STATUS IS WS-REPORT-STATUS.
        FD REPORT-FILE.
        01 REPORT-RECORD PIC X(100).
        FD EMPLOYEE-FILE.
@@ -24,10 +23,6 @@
           05 EMPLOYEE-NAME PIC X(25).
           05 EMPLOYEE-SALARY PIC X(7).
 
-       01 WS-REPORT-STATUS PIC XX.
-       01 WS-REPORT-TOTAL PIC ZZZ,ZZZ,ZZ9.99.
-       01 WS-REPORT-COUNT PIC ZZZ9.
-
        WORKING-STORAGE SECTION.
        01 WS-FILE-STATUS   PIC XX.
        01 WS-EOF           PIC X VALUE "N".
@@ -35,12 +30,22 @@
        01 WS-TOTAL-SALARY  PIC 9(9)V99 VALUE ZERO.
        01 WS-SALARY        PIC 9(6)V99 VALUE ZERO.
        01 WS-SALARY-TEXT   PIC X(7).
+       01 WS-REPORT-STATUS PIC XX.
+       01 WS-REPORT-TOTAL PIC ZZZ,ZZZ,ZZ9.99.
+       01 WS-REPORT-COUNT PIC ZZZ9.
 
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
            DISPLAY "BATCH PAYROLL STARTED"
 
            OPEN INPUT EMPLOYEE-FILE
+           IF WS-FILE-STATUS NOT = "00"
+               DISPLAY "ERROR OPENING FILE: "
+                   WS-FILE-STATUS
+               STOP RUN
+           END-IF
+
+           OPEN OUTPUT REPORT-FILE
 
            IF WS-REPORT-STATUS NOT = "00"
                DISPLAY "ERROR OPENING REPORT: "
