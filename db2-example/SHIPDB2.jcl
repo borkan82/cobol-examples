@@ -1,0 +1,70 @@
+//SHIPDB2B JOB (TRACK),'B JANJETOVIC',CLASS=A,MSGCLASS=X,
+//             NOTIFY=&SYSUID
+//*********************************************************************
+//* SHIPDB2 - compile, link, bind and run on Db2 for z/OS
+//*
+//*  COMPILE  Enterprise COBOL with the Db2 coprocessor (PARM SQL).
+//*           EXEC SQL blocks become Db2 calls; the SQL itself is
+//*           saved into a DBRM.
+//*  LKED     Link-edit with the Db2 TSO attach module DSNELI.
+//*  BIND     DBRM -> package; Db2 validates the SQL against the
+//*           catalog and chooses the access path (indexes).
+//*  RUN      Run under TSO/DSN. The job step owns the connection to
+//*           subsystem DSN1, so the program has no CONNECT.
+//*
+//* Library, subsystem, collection and plan names are examples.
+//*********************************************************************
+//COMPILE  EXEC PGM=IGYCRCTL,
+//         PARM='SQL(''APOST''),LIB,APOST,MAP,XREF'
+//STEPLIB  DD DSN=IGY.SIGYCOMP,DISP=SHR
+//         DD DSN=DSN1.SDSNLOAD,DISP=SHR
+//SYSIN    DD DSN=TRACK.SOURCE.COBOL(SHIPDB2),DISP=SHR
+//SYSLIB   DD DSN=TRACK.DCLGEN.COBOL,DISP=SHR
+//DBRMLIB  DD DSN=TRACK.DBRMLIB(SHIPDB2),DISP=SHR
+//SYSLIN   DD DSN=&&OBJ,DISP=(NEW,PASS),UNIT=SYSDA,
+//            SPACE=(TRK,(5,5))
+//SYSPRINT DD SYSOUT=*
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT2   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT3   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT4   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT5   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT6   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSUT7   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSMDECK DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//*
+//LKED     EXEC PGM=IEWL,COND=(4,LT,COMPILE),PARM='LIST,XREF'
+//SYSLIB   DD DSN=CEE.SCEELKED,DISP=SHR
+//         DD DSN=DSN1.SDSNLOAD,DISP=SHR
+//SYSLMOD  DD DSN=TRACK.LOADLIB(SHIPDB2),DISP=SHR
+//SYSUT1   DD UNIT=SYSDA,SPACE=(CYL,(1,1))
+//SYSPRINT DD SYSOUT=*
+//SYSLIN   DD DSN=&&OBJ,DISP=(OLD,DELETE)
+//         DD *
+  INCLUDE SYSLIB(DSNELI)
+  NAME SHIPDB2(R)
+/*
+//*
+//BIND     EXEC PGM=IKJEFT01,COND=(4,LT)
+//STEPLIB  DD DSN=DSN1.SDSNLOAD,DISP=SHR
+//DBRMLIB  DD DSN=TRACK.DBRMLIB,DISP=SHR
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DSN1)
+  BIND PACKAGE(TRACKCOL) MEMBER(SHIPDB2) -
+       ACTION(REPLACE) ISOLATION(CS) VALIDATE(BIND) -
+       QUALIFIER(TRACK) OWNER(TRACKADM)
+  BIND PLAN(TRACKPLN) PKLIST(TRACKCOL.*) ACTION(REPLACE)
+  END
+/*
+//*
+//RUN      EXEC PGM=IKJEFT01,COND=(4,LT)
+//STEPLIB  DD DSN=DSN1.SDSNLOAD,DISP=SHR
+//         DD DSN=TRACK.LOADLIB,DISP=SHR
+//SYSOUT   DD SYSOUT=*
+//SYSTSPRT DD SYSOUT=*
+//SYSTSIN  DD *
+  DSN SYSTEM(DSN1)
+  RUN PROGRAM(SHIPDB2) PLAN(TRACKPLN) LIB('TRACK.LOADLIB')
+  END
+/*
