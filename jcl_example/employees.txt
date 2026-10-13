@@ -1,0 +1,5 @@
+00001 John Smith                 2500.00
+00002 Mary Jones                 3200.00
+00003 Anna White                 2750.00
+00004 Peter Brown                3100.00
+00005 David Green                2900.00
