@@ -252,8 +252,10 @@ int pg_insert_employee(
         env, SQL_ATTR_ODBC_VERSION,
         (SQLPOINTER)SQL_OV_ODBC3, 0
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_ENV, env);
         goto cleanup;
+    }
 
     rc = SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     if (!SQL_SUCCEEDED(rc))
@@ -265,8 +267,10 @@ int pg_insert_employee(
         (SQLCHAR *)"cobol_user", SQL_NTS,
         (SQLCHAR *)"cobol_dev_password", SQL_NTS
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_DBC, dbc);
         goto cleanup;
+    }
 
     connected = 1;
 
@@ -282,36 +286,44 @@ int pg_insert_employee(
         "VALUES (?, ?, CAST(? AS NUMERIC))",
         SQL_NTS
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(
         stmt, 1, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_CHAR,
         5, 0, id, sizeof(id), &id_len
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(
         stmt, 2, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_VARCHAR,
         30, 0, name, sizeof(name), &name_len
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(
         stmt, 3, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_VARCHAR,
         12, 0, pay, sizeof(pay), &pay_len
     );
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLExecute(stmt);
     if (SQL_SUCCEEDED(rc)) {
-    result = 0;
+        result = 0;
     } else {
         save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
