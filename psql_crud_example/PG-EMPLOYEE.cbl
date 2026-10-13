@@ -137,9 +137,17 @@
            IF WS-RESULT = 0
                DISPLAY "Employee added successfully!"
            ELSE
-               DISPLAY "Insert failed."
-               DISPLAY
-                   "Check the ID, salary, and database."
+               MOVE SPACES TO WS-DB-ERROR
+
+               CALL STATIC "pg_get_last_error"
+                   USING
+                       BY REFERENCE WS-DB-ERROR
+                       BY VALUE 512
+                   RETURNING WS-RESULT
+               END-CALL
+
+               DISPLAY "Insert failed:"
+               DISPLAY FUNCTION TRIM(WS-DB-ERROR)
            END-IF.
 
        
