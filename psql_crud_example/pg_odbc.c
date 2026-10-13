@@ -479,8 +479,10 @@ int pg_delete_employee(const char *employee_id)
 
     rc = SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION,
                        (SQLPOINTER)SQL_OV_ODBC3, 0);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_ENV, env);
         goto cleanup;
+    }
 
     rc = SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     if (!SQL_SUCCEEDED(rc))
@@ -503,14 +505,18 @@ int pg_delete_employee(const char *employee_id)
     rc = SQLPrepare(stmt,
         (SQLCHAR *)"DELETE FROM employees WHERE employee_id = ?",
         SQL_NTS);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLBindParameter(stmt, 1, SQL_PARAM_INPUT,
         SQL_C_CHAR, SQL_CHAR, 5, 0,
         id, sizeof(id), &id_len);
-    if (!SQL_SUCCEEDED(rc))
+    if (!SQL_SUCCEEDED(rc)) {
+        save_odbc_error(SQL_HANDLE_STMT, stmt);
         goto cleanup;
+    }
 
     rc = SQLExecute(stmt);
     if (rc == SQL_NO_DATA) {
